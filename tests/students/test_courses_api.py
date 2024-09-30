@@ -37,7 +37,7 @@ def test_course_list(client, course_factory):
     assert response.status_code == 200
     assert Course.objects.count() == count_courses+n
     for i, cours in enumerate(data):
-        assert cours['id'] == courses[i].id
+        assert cours['id'] == courses[i+count_courses].id
 
 @pytest.mark.django_db
 def test_filter_id_course(client, course_factory):
@@ -50,7 +50,7 @@ def test_filter_id_course(client, course_factory):
 @pytest.mark.django_db
 def test_filter_name_course(client, course_factory):
     course = course_factory(_quantity=1)[0]
-    response = client.get(f'/api/v1/courses/?id={course.id}')
+    response = client.get(f'/api/v1/courses/?name={course.name}')
     data = response.json()
     assert response.status_code == 200
     assert data[0]['name'] == course.name
@@ -71,38 +71,27 @@ def test_create_course(client):
 
 #Пример неудачного теста 
 @pytest.mark.django_db
-def test_update_course_false(client, student_factory, settings):
+def test_update_course_false(client, student_factory, settings, course_factory):
     name_course = "Course1"
     settings.MAX_STUDENTS_PER_COURSE = 1
     students = student_factory(_quantity=2)
     students_ids = [s.id for s in students]
-    client.post(
-        "/api/v1/courses/", 
-        data ={
-            "name" : name_course
-        })
-    data = Course.objects.filter(name=name_course).all()[0]
+    course = course_factory(_quantity=1)[0]
     response = client.put(
-        f"/api/v1/courses/{data.id}/",
+        f"/api/v1/courses/{course.id}/",
         data=({"name": name_course, "students": students_ids})
     )
-    data = response.json()
     assert response.status_code == 400 # ожидаю что произойдет ошибка валидации
 
 #Пример удачного теста 
 @pytest.mark.django_db
-def test_update_course_true(client, student_factory):
+def test_update_course_true(client, student_factory, course_factory):
     name_course = "Course1"
     students = student_factory(_quantity=20)
     students_ids = [s.id for s in students]
-    client.post(
-        "/api/v1/courses/", 
-        data ={
-            "name" : name_course
-        })
-    data = Course.objects.filter(name=name_course).all()[0]
+    course = course_factory(_quantity=1)[0]
     response = client.put(
-        f"/api/v1/courses/{data.id}/",
+        f"/api/v1/courses/{course.id}/",
         data=({"name": name_course, "students": students_ids})
     )
     data = response.json()
